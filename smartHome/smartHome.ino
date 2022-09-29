@@ -12,7 +12,8 @@ const char* ssid = "WE_87B9D0";
 const char* password = "jae05161";
 
 //Your Domain name with URL path or IP address with path
-const char*  serverName = "http://192.168.1.4:8000/Lamp1";
+const char*  serverName = "http://192.168.1.4:8000";
+String url;
 
 // the following variables are unsigned longs because the time, measured in
 // milliseconds, will quickly become a bigger number than can be stored in an int.
@@ -30,6 +31,7 @@ int button_curState = 0;
 int button_lastState = 0;
 
 bool lamp1cur_state = false;
+bool changeStateFlag = false;
 
 void setup() {
   pinMode(lamp1,OUTPUT);
@@ -63,6 +65,7 @@ void loop() {
       lamp1cur_state = true;
     }
     button_lastState = button_curState;
+    changeStateFlag = true;
   }
 
   // Send an HTTP POST request depending on timerDelay
@@ -70,7 +73,7 @@ void loop() {
     //Check WiFi connection status
     if(WiFi.status()== WL_CONNECTED){
       
-     lampStatus =  httpGETRequest(serverName);
+     lampStatus =  httpGETRequest(serverName, lamp1cur_state, changeStateFlag);
      Serial.println(lampStatus);
      JSONVar myObject = JSON.parse(lampStatus);
      // JSON.typeof(jsonVar) can be used to get the type of the var
@@ -93,11 +96,11 @@ void loop() {
       }
       Serial.print("1 = ");
       Serial.println(lampStatusArr[0]);
-      if(lampStatusArr[0] == 1){
+      if(lampStatusArr[0] == 88){
         Serial.print("the lamp is on");
         digitalWrite(lamp1,HIGH);
         lamp1cur_state = true;
-      }else{
+      }else if(lampStatusArr[0]==33){
         Serial.print("the lamp is off");
         digitalWrite(lamp1,LOW);
         lamp1cur_state = false;
@@ -118,12 +121,24 @@ void loop() {
 //////////////////////////////////
 
 
-String httpGETRequest(const char* serverName) {
+String httpGETRequest(const char* serverName, bool ls, bool f) {
   WiFiClient client;
   HTTPClient http;
+
+  if(f){   
+    changeStateFlag = false;
     
+    if(ls){
+      url = String(serverName) + "/Lamp1/88";
+    }else{
+      url = String(serverName) + "/Lamp1/33";
+    }
+  }else{
+    url = String(serverName) + "/updateNode";
+  }
+  
   // Your IP address with path or Domain name with URL path 
-  http.begin(client, serverName);
+  http.begin(client, url);
   
   // Send HTTP POST request
   int httpResponseCode = http.GET();
